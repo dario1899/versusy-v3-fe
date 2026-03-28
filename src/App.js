@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import PictureDisplay from './components/PictureDisplay';
 import LoginPage from './components/LoginPage';
-import { fetchMockCredentials } from './services/mockAuth';
+import { login as apiLogin, logout as apiLogout } from './api/client';
 
 function App() {
   const storageKey = useMemo(() => 'auth:isLoggedIn', []);
@@ -15,15 +15,21 @@ function App() {
     setLogin(localStorage.getItem(userKey) || '');
   }, [storageKey, userKey]);
 
-  const handleLogin = async ({ login, password }) => {
-    await fetchMockCredentials();
+  const handleLogin = async ({ login: loginValue, password }) => {
+    const data = await apiLogin(loginValue, password);
+    const displayName =
+      data?.user?.login ||
+      data?.user?.email ||
+      data?.username ||
+      loginValue;
     localStorage.setItem(storageKey, 'true');
-    localStorage.setItem(userKey, login);
+    localStorage.setItem(userKey, displayName);
     setIsLoggedIn(true);
-    setLogin(login);
+    setLogin(displayName);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await apiLogout();
     localStorage.removeItem(storageKey);
     localStorage.removeItem(userKey);
     setIsLoggedIn(false);

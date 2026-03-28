@@ -3,66 +3,119 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// Sample data
-const images = [
+/** 1×1 PNG — same shape as backend (raw base64, no data: prefix) */
+const MOCK_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+const versuses = [
   {
     id: 1,
-    url: 'https://picsum.photos/400/300?random=1',
-    alt: 'Beautiful landscape'
+    name1: 'Messi',
+    name2: 'Ronaldo',
+    image1: MOCK_PNG,
+    image2: MOCK_PNG,
+    resultTexts: {
+      1: '18% (23 głosów)',
+      2: '82% (2345 głosów)',
+    },
   },
   {
     id: 2,
-    url: 'https://picsum.photos/400/300?random=2',
-    alt: 'Amazing architecture'
-  }
+    name1: 'Góry',
+    name2: 'Morze',
+    image1: MOCK_PNG,
+    image2: MOCK_PNG,
+    resultTexts: {
+      1: '45% (1200 głosów)',
+      2: '55% (1340 głosów)',
+    },
+  },
+  {
+    id: 3,
+    name1: 'Opcja A',
+    name2: 'Opcja B',
+    image1: MOCK_PNG,
+    image2: MOCK_PNG,
+    resultTexts: {
+      1: '50% (100 głosów)',
+      2: '50% (100 głosów)',
+    },
+  },
 ];
 
-const texts = {
-  1: "This is a stunning landscape captured in the mountains. The view is breathtaking with rolling hills and a clear blue sky. Perfect for hiking and photography enthusiasts!",
-  2: "An architectural masterpiece showcasing modern design principles. The building features innovative materials and sustainable construction methods that blend seamlessly with nature."
-};
+function extractToken(req) {
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith('Bearer ')) return null;
+  return h.slice(7);
+}
 
-// API Routes
-
-// GET /api/images - Fetch all images
-app.get('/api/images', (req, res) => {
-  try {
-    res.json(images);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch images' });
+function requireAuth(req, res, next) {
+  const token = extractToken(req);
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-});
+  next();
+}
 
-// GET /api/text/:id - Fetch text for specific image
-app.get('/api/text/:id', (req, res) => {
-  try {
-    const imageId = parseInt(req.params.id);
-    const text = texts[imageId];
-    
-    if (!text) {
-      return res.status(404).json({ error: 'Text not found for this image' });
-    }
-    
-    res.json({ text });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch text' });
+app.post('/api/v1/auth/login', (req, res) => {
+  const { email, password, login } = req.body || {};
+  const identifier = email || login;
+  if (!identifier || !password) {
+    return res.status(400).json({ message: 'email and password required' });
   }
+  const accessToken = Buffer.from(`access:${identifier}:${Date.now()}`).toString(
+    'base64'
+  );
+  const refreshToken = Buffer.from(
+    `refresh:${identifier}:${Date.now()}`
+  ).toString('base64');
+  res.json({
+    accessToken,
+    refreshToken,
+    isRequiredActivation: false,
+    user: { email: String(identifier), login: String(identifier) },
+  });
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Backend server is running' });
+app.post('/api/v1/auth/logout', (req, res) => {
+  res.json({ ok: true });
 });
 
-// Start server
+function versusById(idParam) {
+  const id = parseInt(idParam, 10);
+  if (Number.isNaN(id)) return null;
+  return versuses.find((v) => v.id === id) ?? null;
+}
+
+app.get('/api/versus/count', requireAuth, (req, res) => {
+  res.json({ count: versuses.length });
+});
+
+app.get('/api/versus/:id', requireAuth, (req, res) => {
+  const row = versusById(req.params.id);
+  if (!row) {
+    return res.status(404).json({ error: 'Versus not found' });
+  }
+  const { resultTexts: _t, ...body } = row;
+  res.json(body);
+});
+
+app.post('/api/versus/:id/vote', requireAuth, (req, res) => {
+  const row = versusById(req.params.id);
+  if (!row) {
+    return res.status(404).json({ error: 'Versus not found' });
+  }
+  const choice = req.body?.choice;
+  if (choice !== 1 && choice !== 2) {
+    return res.status(400).json({ error: 'choice must be 1 or 2' });
+  }
+  const { resultTexts } = row;
+  res.json({ texts: resultTexts });
+});
+
 app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log('Available endpoints:');
-  console.log(`  GET /api/images - Fetch all images`);
-  console.log(`  GET /api/text/:id - Fetch text for image ID`);
-  console.log(`  GET /api/health - Health check`);
+  console.log(`API listening on http://localhost:${PORT}`);
 });

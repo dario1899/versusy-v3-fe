@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './PictureDisplay.css';
 
-import { mockImageSets, mockTextSets } from './mockData';
+import {
+  fetchVersusesCount,
+  fetchVersusByIndex,
+  postVersusVote,
+} from '../api/client';
+import { normalizeVersusToPlayers } from '../utils/versusPayload';
 
-// Design assets
 import glosujButton from '../design/glosuj-button.png';
 import vsButton from '../design/vs-button.png';
 import leftArrow from '../design/left-arrow.png';
@@ -15,53 +19,175 @@ const PictureDisplay = () => {
   const [images, setImages] = useState([]);
   const [texts, setTexts] = useState({});
   const [loading, setLoading] = useState(true);
-  const [currentSet, setCurrentSet] = useState(0);
+  /** Set only after a successful load — never advanced on failed fetch. */
+  const [currentVersusId, setCurrentVersusId] = useState(1);
+  const [totalSetCount, setTotalSetCount] = useState(0);
+  const [error, setError] = useState('');
+  /** API returned entity not found for attempted next — right arrow blocked. */
+  const [allVersusSeen, setAllVersusSeen] = useState(false);
+  const [voteError, setVoteError] = useState('');
+  const [voteLoading, setVoteLoading] = useState(false);
+  const blobUrlsRef = useRef([]);
 
-  // Load images for current set
+  const loadVersus = useCallback(async (targetId, opts = {}) => {
+    const { signal } = opts;
+    const aborted = () => signal?.aborted;
+
+    blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    blobUrlsRef.current = [];
+
+    setLoading(true);
+    setError('');
+    setVoteError('');
+    setTexts({});
+    setAllVersusSeen(false);
+
+    try {
+      const data = await fetchVersusByIndex(targetId);
+      if (aborted()) return;
+      const { players, objectUrls } = normalizeVersusToPlayers(data);
+      if (aborted()) {
+        objectUrls.forEach((u) => URL.revokeObjectURL(u));
+        return;
+      }
+      blobUrlsRef.current = objectUrls;
+      setCurrentVersusId(targetId);
+      setImages(players);
+      setAllVersusSeen(false);
+    } catch (e) {
+      if (aborted()) return;
+      if (e.entityNotFound) {
+        setAllVersusSeen(true);
+        setImages([]);
+      } else {
+        setError(e?.message || 'Nie udało się załadować versus.');
+        setAllVersusSeen(false);
+      }
+    } finally {
+      if (!aborted()) setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const loadImages = () => {
-      setLoading(true);
-      setTexts({}); // Clear previous texts
-      // Simulate API delay
-      setTimeout(() => {
-        setImages(mockImageSets[currentSet]);
-        setLoading(false);
-      }, 1);
+    let cancelled = false;
+    (async () => {
+      try {
+        const count = await fetchVersusesCount();
+        if (cancelled) return;
+        setTotalSetCount(count);
+        if (count === 0) {
+          setError('Brak zestawów versus.');
+          setLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e?.message || 'Nie udało się pobrać listy.');
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    loadImages();
-  }, [currentSet]);
+  useEffect(() => {
+    if (totalSetCount === 0) return;
+    const ac = new AbortController();
+    loadVersus(1, { signal: ac.signal });
+    return () => {
+      ac.abort();
+      blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      blobUrlsRef.current = [];
+    };
+  }, [totalSetCount, loadVersus]);
 
-  // Handle image click - show text on BOTH pictures
-  const handleImageClick = (imageId) => () => {
-    // Simulate API delay
-    console.log(imageId);
-    setTimeout(() => {
-      const currentTexts = mockTextSets[currentSet];
-      setTexts({
-        1: currentTexts[1],
-        2: currentTexts[2]
-      });
-    }, 300);
-  };
+  const handleImageClick = useCallback(
+    (choice) => async () => {
+      setVoteLoading(true);
+      setVoteError('');
+      try {
+        const { texts: nextTexts } = await postVersusVote(currentVersusId, choice);
+        const t = nextTexts || {};
+        setTexts({
+          1: t[1] ?? t['1'],
+          2: t[2] ?? t['2'],
+        });
+      } catch (e) {
+        setVoteError(e?.message || 'Głosowanie nie powiodło się.');
+      } finally {
+        setVoteLoading(false);
+      }
+    },
+    [currentVersusId]
+  );
 
-  // Handle next versus button click
-  const handleNextVersus = () => {
-    const nextSet = (currentSet + 1) % mockImageSets.length;
-    setCurrentSet(nextSet);
-  };
+  const handleNextVersus = useCallback(async () => {
+    if (totalSetCount <= 0 || allVersusSeen) return;
+    const nextId =
+      currentVersusId >= totalSetCount ? 1 : currentVersusId + 1;
+    await loadVersus(nextId);
+  }, [totalSetCount, allVersusSeen, currentVersusId, loadVersus]);
 
-  const handlePrevVersus = () => {
-    const prevSet =
-      (currentSet - 1 + mockImageSets.length) % mockImageSets.length;
-    setCurrentSet(prevSet);
-  };
-  
+  const handlePrevVersus = useCallback(async () => {
+    if (totalSetCount <= 0 || currentVersusId <= 1) return;
+    const prevId = currentVersusId - 1;
+    await loadVersus(prevId);
+  }, [totalSetCount, currentVersusId, loadVersus]);
+
   if (loading) {
     return (
       <div className="loading">
         <div className="spinner"></div>
-        <p>Loading images...</p>
+        <p>Ładowanie…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="vote-screen">
+        <div className="vote-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (allVersusSeen) {
+    return (
+      <div className="vote-screen">
+        <div className="vote-frame vote-frame--nav-only">
+          <button
+            className="nav-arrow nav-arrow-left"
+            onClick={handlePrevVersus}
+            disabled={voteLoading || currentVersusId <= 1}
+            aria-label="Previous versus"
+            type="button"
+          >
+            <img src={leftArrow} alt="previous" />
+          </button>
+          <button
+            className="nav-arrow nav-arrow-right"
+            onClick={handleNextVersus}
+            disabled={voteLoading || allVersusSeen}
+            aria-label="Next versus"
+            type="button"
+          >
+            <img src={rightArrow} alt="next" />
+          </button>
+          <div className="versus-all-seen-message">
+            Zobaczyłeś już wszystkie Versusy. Wróć później
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (images.length < 2) {
+    return (
+      <div className="vote-screen">
+        <div className="vote-error">
+          Nieprawidłowe dane versus (wymaganych jest dwóch graczy).
+        </div>
       </div>
     );
   }
@@ -72,23 +198,27 @@ const PictureDisplay = () => {
   return (
     <div className="vote-screen">
       <div className="vote-frame">
-        {/* Left / Right navigation arrows */}
+        {voteError ? <div className="vote-action-error">{voteError}</div> : null}
+
         <button
           className="nav-arrow nav-arrow-left"
           onClick={handlePrevVersus}
+          disabled={voteLoading || currentVersusId <= 1}
           aria-label="Previous versus"
+          type="button"
         >
           <img src={leftArrow} alt="previous" />
         </button>
         <button
           className="nav-arrow nav-arrow-right"
           onClick={handleNextVersus}
+          disabled={voteLoading}
           aria-label="Next versus"
+          type="button"
         >
           <img src={rightArrow} alt="next" />
         </button>
 
-        {/* Top player section */}
         <div
           className="vote-section vote-section-top"
           style={{ backgroundImage: `url(${tloTop})` }}
@@ -102,7 +232,12 @@ const PictureDisplay = () => {
 
             <div className="player-footer">
               <div className="player-name">{topImage.name}</div>
-              <button className="glosuj-btn" onClick={handleImageClick("image1")}>
+              <button
+                className="glosuj-btn"
+                onClick={handleImageClick(1)}
+                disabled={voteLoading}
+                type="button"
+              >
                 <img src={glosujButton} alt="Głosuj" />
               </button>
               {texts[topImage.id] && (
@@ -112,19 +247,22 @@ const PictureDisplay = () => {
           </div>
         </div>
 
-        {/* Center VS badge */}
         <div className="vs-center">
           <img src={vsButton} alt="vs" className="vs-image" />
         </div>
 
-        {/* Bottom player section */}
         <div
           className="vote-section vote-section-bottom"
           style={{ backgroundImage: `url(${tloBottom})` }}
         >
           <div className="player-card player-card-bottom">
             <div className="player-footer">
-              <button className="glosuj-btn" onClick={handleImageClick("image2")}>
+              <button
+                className="glosuj-btn"
+                onClick={handleImageClick(2)}
+                disabled={voteLoading}
+                type="button"
+              >
                 <img src={glosujButton} alt="Głosuj" />
               </button>
               <div className="player-name">{bottomImage.name}</div>
