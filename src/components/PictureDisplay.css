@@ -157,12 +157,20 @@
   color: #ffffff;
 }
 
+/* Match visual weight of .glosuj-btn image (same width band, bold label-sized type) */
 .vote-result {
-  margin-top: 2px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  display: block;
+  width: 90%;
+  max-width: 320px;
+  margin: 0 auto;
+  margin-top: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.25;
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .vs-center {
@@ -276,5 +284,10 @@
 
     .glosuj-btn img {
       max-width: 260px;
+    }
+
+    .vote-result {
+      max-width: 260px;
+      font-size: 1.2rem;
     }
   }

@@ -7,6 +7,7 @@ import {
   postVersusVote,
 } from '../api/client';
 import { normalizeVersusToPlayers } from '../utils/versusPayload';
+import { formatVoteSummary } from '../utils/voteFormat';
 
 import glosujButton from '../design/glosuj-button.png';
 import vsButton from '../design/vs-button.png';
@@ -17,7 +18,8 @@ import tloBottom from '../design/tlo2.png';
 
 const PictureDisplay = () => {
   const [images, setImages] = useState([]);
-  const [texts, setTexts] = useState({});
+  /** After voting: tallies from API `{ pic1Votes, pic2Votes }`. */
+  const [voteCounts, setVoteCounts] = useState(null);
   const [loading, setLoading] = useState(true);
   /** Set only after a successful load — never advanced on failed fetch. */
   const [currentVersusId, setCurrentVersusId] = useState(1);
@@ -39,7 +41,7 @@ const PictureDisplay = () => {
     setLoading(true);
     setError('');
     setVoteError('');
-    setTexts({});
+    setVoteCounts(null);
     setAllVersusSeen(false);
 
     try {
@@ -107,12 +109,21 @@ const PictureDisplay = () => {
       setVoteLoading(true);
       setVoteError('');
       try {
-        const { texts: nextTexts } = await postVersusVote(currentVersusId, choice);
-        const t = nextTexts || {};
-        setTexts({
-          1: t[1] ?? t['1'],
-          2: t[2] ?? t['2'],
-        });
+        const data = await postVersusVote(currentVersusId, choice);
+        const p1 =
+          data.pic1Votes ??
+          data.pic1votes ??
+          data.pic1_votes;
+        const p2 =
+          data.pic2Votes ??
+          data.pic2votes ??
+          data.pic2_votes;
+        if (p1 != null && p2 != null) {
+          setVoteCounts({
+            pic1Votes: Number(p1),
+            pic2Votes: Number(p2),
+          });
+        }
       } catch (e) {
         setVoteError(e?.message || 'Głosowanie nie powiodło się.');
       } finally {
@@ -194,6 +205,10 @@ const PictureDisplay = () => {
 
   const topImage = images[0];
   const bottomImage = images[1];
+  const voteTotal =
+    voteCounts != null
+      ? voteCounts.pic1Votes + voteCounts.pic2Votes
+      : 0;
 
   return (
     <div className="vote-screen">
@@ -232,16 +247,19 @@ const PictureDisplay = () => {
 
             <div className="player-footer">
               <div className="player-name">{topImage.name}</div>
-              <button
-                className="glosuj-btn"
-                onClick={handleImageClick(1)}
-                disabled={voteLoading}
-                type="button"
-              >
-                <img src={glosujButton} alt="Głosuj" />
-              </button>
-              {texts[topImage.id] && (
-                <div className="vote-result">{texts[topImage.id]}</div>
+              {voteCounts == null ? (
+                <button
+                  className="glosuj-btn"
+                  onClick={handleImageClick(1)}
+                  disabled={voteLoading}
+                  type="button"
+                >
+                  <img src={glosujButton} alt="Głosuj" />
+                </button>
+              ) : (
+                <div className="vote-result">
+                  {formatVoteSummary(voteCounts.pic1Votes, voteTotal)}
+                </div>
               )}
             </div>
           </div>
@@ -257,18 +275,21 @@ const PictureDisplay = () => {
         >
           <div className="player-card player-card-bottom">
             <div className="player-footer">
-              <button
-                className="glosuj-btn"
-                onClick={handleImageClick(2)}
-                disabled={voteLoading}
-                type="button"
-              >
-                <img src={glosujButton} alt="Głosuj" />
-              </button>
-              <div className="player-name">{bottomImage.name}</div>
-              {texts[bottomImage.id] && (
-                <div className="vote-result">{texts[bottomImage.id]}</div>
+              {voteCounts == null ? (
+                <button
+                  className="glosuj-btn"
+                  onClick={handleImageClick(2)}
+                  disabled={voteLoading}
+                  type="button"
+                >
+                  <img src={glosujButton} alt="Głosuj" />
+                </button>
+              ) : (
+                <div className="vote-result">
+                  {formatVoteSummary(voteCounts.pic2Votes, voteTotal)}
+                </div>
               )}
+              <div className="player-name">{bottomImage.name}</div>
             </div>
             <img
               src={bottomImage.url}

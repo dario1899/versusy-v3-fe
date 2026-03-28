@@ -112,8 +112,13 @@ app.post('/api/versus/:id/vote', requireAuth, (req, res) => {
   if (choice !== 1 && choice !== 2) {
     return res.status(400).json({ error: 'choice must be 1 or 2' });
   }
-  const { resultTexts } = row;
-  res.json({ texts: resultTexts });
+  const pic1Votes = choice === 1 ? 1 : 0;
+  const pic2Votes = choice === 2 ? 1 : 0;
+  res.json({
+    versusId: row.id,
+    pic1Votes,
+    pic2Votes,
+  });
 });
 
 app.listen(PORT, () => {
