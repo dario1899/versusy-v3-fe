@@ -21,7 +21,7 @@
     "deploy": "gh-pages -d build",
     "deploy:manual": "npm run build && gh-pages -d build"
   },
-  "homepage": "https://dario1899.github.io/versusy-v2",
+  "homepage": "https://dario1899.github.io/versusy-v3-fe",
   "eslintConfig": {
     "extends": [
       "react-app",
