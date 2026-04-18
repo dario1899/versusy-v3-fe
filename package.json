@@ -16,7 +16,6 @@
     "cors": "^2.8.5",
     "express": "^4.21.2"
   },
-  "proxy": "http://localhost:8080",
   "scripts": {
     "start": "react-scripts start",
     "server": "node server.js",

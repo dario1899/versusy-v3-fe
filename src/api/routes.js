@@ -1,7 +1,7 @@
 /**
- * Central API URLs — same pattern as versusy-admin (`src/api/routes.js`).
- * Dev: defaults to `/api` (CRA proxy → backend). Production: set REACT_APP_API_BASE
- * to full origin including path prefix, e.g. https://example.com/api
+ * Central API URLs.
+ * Set `REACT_APP_API_BASE` in `.env` (e.g. Cloud Run URL + optional `/api` prefix).
+ * If unset, defaults to `/api` (same-origin; use only if something proxies `/api` for you).
  */
 const raw =
   process.env.REACT_APP_API_BASE || process.env.REACT_APP_API_BASE_URL || '';
