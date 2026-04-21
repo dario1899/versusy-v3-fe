@@ -20,7 +20,7 @@ A React application that displays two pictures in a "versus" format, featuring c
 ```bash
 npm install
 ```
-
+x
 2. Start the development server:
 ```bash
 npm start
@@ -78,3 +78,6 @@ The app uses mock data defined in `PictureDisplay.js`:
 - Update the `mockTexts` object to change the text content
 - Customize styling in the CSS files
 - Add more images by extending the mock data arrays
+
+
+test
