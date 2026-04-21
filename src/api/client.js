@@ -1,6 +1,6 @@
 /**
  * Auth + API calls — aligned with versusy-admin `src/api/client.js`
- * (tokens, login/logout, fetch + credentials + JSON headers).
+ * (tokens, login/logout, fetch + JSON headers).
  */
 import { apiRoutes } from './routes';
 
@@ -49,7 +49,6 @@ export async function login(email, password) {
   const res = await fetch(apiRoutes.authLogin(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) {
@@ -67,7 +66,6 @@ export async function logout() {
     await fetch(apiRoutes.authLogout(), {
       method: 'POST',
       headers: getAuthHeaders(),
-      credentials: 'include',
       body: JSON.stringify({ refreshToken }),
     });
   } finally {
@@ -78,7 +76,6 @@ export async function logout() {
 export async function fetchVersusesCount() {
   const res = await fetch(apiRoutes.versusesCount(), {
     headers: getAuthHeaders(),
-    credentials: 'include',
   });
   if (!res.ok) throw new Error('Failed to load versuses count');
   const data = await res.json();
@@ -98,7 +95,6 @@ function isVersusEntityNotFound(status, body) {
 export async function fetchVersusByIndex(versusId) {
   const res = await fetch(apiRoutes.versusByIndex(versusId), {
     headers: getAuthHeaders(),
-    credentials: 'include',
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -121,7 +117,6 @@ export async function postVersusVote(versusId, choice) {
   const res = await fetch(apiRoutes.versusVote(versusId), {
     method: 'POST',
     headers: getAuthHeaders(),
-    credentials: 'include',
     body: JSON.stringify({ choice }),
   });
   if (!res.ok) {
