@@ -77,10 +77,12 @@
 }
 
 .vote-section-top {
+  background-color: #f2cf2f;
   border-bottom: 4px solid #ffffff;
 }
 
 .vote-section-bottom {
+  background-color: #789fd3;
   border-top: 4px solid #ffffff;
 }
 

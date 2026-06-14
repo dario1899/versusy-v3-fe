@@ -13,8 +13,6 @@ import glosujButton from '../design/glosuj-button.png';
 import vsButton from '../design/vs-button.png';
 import leftArrow from '../design/left-arrow.png';
 import rightArrow from '../design/right-arrow.png';
-import tloTop from '../design/tlo1.png';
-import tloBottom from '../design/tlo2.png';
 
 const PictureDisplay = () => {
   const [images, setImages] = useState([]);
@@ -234,10 +232,7 @@ const PictureDisplay = () => {
           <img src={rightArrow} alt="next" />
         </button>
 
-        <div
-          className="vote-section vote-section-top"
-          style={{ backgroundImage: `url(${tloTop})` }}
-        >
+        <div className="vote-section vote-section-top">
           <div className="player-card player-card-top">
             <img
               src={topImage.url}
@@ -269,10 +264,7 @@ const PictureDisplay = () => {
           <img src={vsButton} alt="vs" className="vs-image" />
         </div>
 
-        <div
-          className="vote-section vote-section-bottom"
-          style={{ backgroundImage: `url(${tloBottom})` }}
-        >
+        <div className="vote-section vote-section-bottom">
           <div className="player-card player-card-bottom">
             <div className="player-footer">
               {voteCounts == null ? (
