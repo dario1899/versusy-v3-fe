@@ -275,8 +275,9 @@ const PictureDisplay = () => {
               className="player-image"
             />
 
+            <div className="player-name">{topImage.name}</div>
+
             <div className="player-footer">
-              <div className="player-name">{topImage.name}</div>
               <GlosujButton
                 placement="top"
                 votes={voteCounts?.pic1Votes ?? 0}
@@ -304,8 +305,8 @@ const PictureDisplay = () => {
                 onClick={handleImageClick(2)}
                 disabled={voteLoading}
               />
-              <div className="player-name">{bottomImage.name}</div>
             </div>
+            <div className="player-name">{bottomImage.name}</div>
             <img
               src={bottomImage.url}
               alt={bottomImage.alt}
