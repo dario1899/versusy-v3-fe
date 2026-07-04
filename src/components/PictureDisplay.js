@@ -293,24 +293,24 @@ const PictureDisplay = () => {
 
         <div className="vote-section vote-section-top">
           <div className="player-card player-card-top">
-            <img
-              src={topImage.url}
-              alt={topImage.alt}
-              className="player-image"
-            />
-
-            <div className="player-name">{topImage.name}</div>
-
-            <div className="player-footer">
-              <GlosujButton
-                placement="top"
-                votes={voteCounts?.pic1Votes ?? 0}
-                totalVotes={voteTotal}
-                voted={voteCounts != null}
-                onClick={handleImageClick(1)}
-                disabled={voteLoading}
+            <div className="player-image-wrap">
+              <img
+                src={topImage.url}
+                alt={topImage.alt}
+                className="player-image"
               />
             </div>
+            <div className="player-name">{topImage.name}</div>
+          </div>
+          <div className="player-footer">
+            <GlosujButton
+              placement="top"
+              votes={voteCounts?.pic1Votes ?? 0}
+              totalVotes={voteTotal}
+              voted={voteCounts != null}
+              onClick={handleImageClick(1)}
+              disabled={voteLoading}
+            />
           </div>
         </div>
 
@@ -319,23 +319,25 @@ const PictureDisplay = () => {
         </div>
 
         <div className="vote-section vote-section-bottom">
+          <div className="player-footer">
+            <GlosujButton
+              placement="bottom"
+              votes={voteCounts?.pic2Votes ?? 0}
+              totalVotes={voteTotal}
+              voted={voteCounts != null}
+              onClick={handleImageClick(2)}
+              disabled={voteLoading}
+            />
+          </div>
           <div className="player-card player-card-bottom">
-            <div className="player-footer">
-              <GlosujButton
-                placement="bottom"
-                votes={voteCounts?.pic2Votes ?? 0}
-                totalVotes={voteTotal}
-                voted={voteCounts != null}
-                onClick={handleImageClick(2)}
-                disabled={voteLoading}
+            <div className="player-name">{bottomImage.name}</div>
+            <div className="player-image-wrap">
+              <img
+                src={bottomImage.url}
+                alt={bottomImage.alt}
+                className="player-image"
               />
             </div>
-            <div className="player-name">{bottomImage.name}</div>
-            <img
-              src={bottomImage.url}
-              alt={bottomImage.alt}
-              className="player-image"
-            />
           </div>
         </div>
         </div>
