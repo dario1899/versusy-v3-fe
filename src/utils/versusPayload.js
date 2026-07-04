@@ -1,4 +1,24 @@
 /**
+ * @returns {string} e.g. "#Football" or "#" when missing
+ */
+export function formatVersusTag(data) {
+  if (!data || typeof data !== 'object') return '#';
+
+  const raw =
+    data.tag ??
+    data.hashtag ??
+    data.category ??
+    data.categoryName ??
+    data.categoryTag ??
+    '';
+
+  const trimmed = String(raw).trim();
+  if (!trimmed) return '#';
+
+  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+}
+
+/**
  * Maps API versus payload to player rows for the vote UI.
  * Supports:
  * - Legacy `{ players: [{ id, name, url, alt? }, …] }`

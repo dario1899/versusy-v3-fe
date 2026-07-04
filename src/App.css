@@ -28,6 +28,12 @@ main {
   padding: 0 20px;
 }
 
+main.main--vote {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 .logout-button {
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: rgba(255, 255, 255, 0.9);
