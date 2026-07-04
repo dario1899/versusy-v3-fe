@@ -120,6 +120,7 @@ const PictureDisplay = () => {
       if (aborted()) return;
       if (e.entityNotFound) {
         setAllVersusSeen(true);
+        setVersusTag('#');
         setImages([]);
       } else {
         setError(e?.message || 'Nie udało się załadować versus.');
@@ -172,6 +173,7 @@ const PictureDisplay = () => {
       } catch (e) {
         if (direction === 'next' && e.entityNotFound) {
           setAllVersusSeen(true);
+          setVersusTag('#');
           setImages([]);
         } else if (direction === 'previous' && e.entityNotFound) {
           setCanGoPrevious(false);
@@ -279,7 +281,7 @@ const PictureDisplay = () => {
 
   if (allVersusSeen) {
     return (
-      <VoteAppShell tag={versusTag}>
+      <VoteAppShell tag="#">
         <div className="vote-screen">
           <div className="vote-frame vote-frame--nav-only">
           <button
