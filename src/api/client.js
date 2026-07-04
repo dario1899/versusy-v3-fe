@@ -91,9 +91,8 @@ function isVersusEntityNotFound(status, body) {
   return parts.some((p) => p.includes('entity not found'));
 }
 
-/** @param {number} versusId — 1-based versus id in the API */
-export async function fetchVersusByIndex(versusId) {
-  const res = await fetch(apiRoutes.versusByIndex(versusId), {
+async function fetchVersusResponse(url) {
+  const res = await fetch(url, {
     headers: getAuthHeaders(),
   });
   const data = await res.json().catch(() => ({}));
@@ -107,6 +106,21 @@ export async function fetchVersusByIndex(versusId) {
     throw err;
   }
   return data;
+}
+
+/** @param {number} versusId — 1-based versus id in the API */
+export async function fetchVersusByIndex(versusId) {
+  return fetchVersusResponse(apiRoutes.versusByIndex(versusId));
+}
+
+/** @param {number} versusId — current versus id */
+export async function fetchVersusNext(versusId) {
+  return fetchVersusResponse(apiRoutes.versusNext(versusId));
+}
+
+/** @param {number} versusId — current versus id */
+export async function fetchVersusPrevious(versusId) {
+  return fetchVersusResponse(apiRoutes.versusPrevious(versusId));
 }
 
 /**

@@ -13,6 +13,10 @@ export const apiRoutes = {
   versusesCount: () => `${API_BASE}/versus/count`,
   /** @param {number} versusId — 1-based id */
   versusByIndex: (versusId) => `${API_BASE}/versus/${versusId}`,
+  /** @param {number} versusId — current versus id */
+  versusNext: (versusId) => `${API_BASE}/versus/${versusId}/next`,
+  /** @param {number} versusId — current versus id */
+  versusPrevious: (versusId) => `${API_BASE}/versus/${versusId}/previous`,
   /** @param {number} versusId — 1-based id */
   versusVote: (versusId) => `${API_BASE}/versus/${versusId}/vote`,
 };

@@ -4,6 +4,8 @@ import './PictureDisplay.css';
 import {
   fetchVersusesCount,
   fetchVersusByIndex,
+  fetchVersusNext,
+  fetchVersusPrevious,
   postVersusVote,
 } from '../api/client';
 import { normalizeVersusToPlayers, formatVersusTag } from '../utils/versusPayload';
@@ -72,10 +74,25 @@ const PictureDisplay = () => {
   const [error, setError] = useState('');
   /** API returned entity not found for attempted next — right arrow blocked. */
   const [allVersusSeen, setAllVersusSeen] = useState(false);
+  /** No previous versus available from current position. */
+  const [canGoPrevious, setCanGoPrevious] = useState(false);
   const [voteError, setVoteError] = useState('');
   const [voteLoading, setVoteLoading] = useState(false);
   const [versusTag, setVersusTag] = useState('#');
   const blobUrlsRef = useRef([]);
+
+  const applyVersusData = useCallback((data) => {
+    const { players, objectUrls } = normalizeVersusToPlayers(data);
+    blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    blobUrlsRef.current = objectUrls;
+    const id = data.id ?? data.versusId;
+    if (id != null) setCurrentVersusId(id);
+    setImages(players);
+    setVersusTag(formatVersusTag(data));
+    setVoteCounts(null);
+    setVoteError('');
+    setAllVersusSeen(false);
+  }, []);
 
   const loadVersus = useCallback(async (targetId, opts = {}) => {
     const { signal } = opts;
@@ -90,20 +107,15 @@ const PictureDisplay = () => {
     setVoteCounts(null);
     setAllVersusSeen(false);
     setVersusTag('#');
+    setCanGoPrevious(false);
 
     try {
       const data = await fetchVersusByIndex(targetId);
       if (aborted()) return;
-      const { players, objectUrls } = normalizeVersusToPlayers(data);
-      if (aborted()) {
-        objectUrls.forEach((u) => URL.revokeObjectURL(u));
-        return;
+      applyVersusData(data);
+      if (data.id == null && data.versusId == null) {
+        setCurrentVersusId(targetId);
       }
-      blobUrlsRef.current = objectUrls;
-      setCurrentVersusId(targetId);
-      setImages(players);
-      setVersusTag(formatVersusTag(data));
-      setAllVersusSeen(false);
     } catch (e) {
       if (aborted()) return;
       if (e.entityNotFound) {
@@ -116,7 +128,62 @@ const PictureDisplay = () => {
     } finally {
       if (!aborted()) setLoading(false);
     }
-  }, []);
+  }, [applyVersusData]);
+
+  const navigateVersus = useCallback(
+    async (direction) => {
+      if (direction === 'next' && allVersusSeen) return;
+
+      // From end screen, left restores the last versus the user was viewing.
+      if (direction === 'previous' && allVersusSeen) {
+        setLoading(true);
+        setError('');
+        setVoteError('');
+        setVoteCounts(null);
+
+        try {
+          const data = await fetchVersusByIndex(currentVersusId);
+          applyVersusData(data);
+          setCanGoPrevious(true);
+        } catch (e) {
+          setError(e?.message || 'Nie udało się załadować versus.');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (direction === 'previous' && !canGoPrevious) return;
+
+      setLoading(true);
+      setError('');
+      setVoteError('');
+      setVoteCounts(null);
+
+      try {
+        const data =
+          direction === 'next'
+            ? await fetchVersusNext(currentVersusId)
+            : await fetchVersusPrevious(currentVersusId);
+        applyVersusData(data);
+        if (direction === 'next') {
+          setCanGoPrevious(true);
+        }
+      } catch (e) {
+        if (direction === 'next' && e.entityNotFound) {
+          setAllVersusSeen(true);
+          setImages([]);
+        } else if (direction === 'previous' && e.entityNotFound) {
+          setCanGoPrevious(false);
+        } else {
+          setError(e?.message || 'Nie udało się załadować versus.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [allVersusSeen, canGoPrevious, currentVersusId, applyVersusData]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -182,17 +249,12 @@ const PictureDisplay = () => {
   );
 
   const handleNextVersus = useCallback(async () => {
-    if (totalSetCount <= 0 || allVersusSeen) return;
-    const nextId =
-      currentVersusId >= totalSetCount ? 1 : currentVersusId + 1;
-    await loadVersus(nextId);
-  }, [totalSetCount, allVersusSeen, currentVersusId, loadVersus]);
+    await navigateVersus('next');
+  }, [navigateVersus]);
 
   const handlePrevVersus = useCallback(async () => {
-    if (totalSetCount <= 0 || currentVersusId <= 1) return;
-    const prevId = currentVersusId - 1;
-    await loadVersus(prevId);
-  }, [totalSetCount, currentVersusId, loadVersus]);
+    await navigateVersus('previous');
+  }, [navigateVersus]);
 
   if (loading) {
     return (
@@ -223,7 +285,7 @@ const PictureDisplay = () => {
           <button
             className="nav-arrow nav-arrow-left"
             onClick={handlePrevVersus}
-            disabled={voteLoading || currentVersusId <= 1}
+            disabled={voteLoading}
             aria-label="Previous versus"
             type="button"
           >
@@ -275,7 +337,7 @@ const PictureDisplay = () => {
         <button
           className="nav-arrow nav-arrow-left"
           onClick={handlePrevVersus}
-          disabled={voteLoading || currentVersusId <= 1}
+          disabled={voteLoading || !canGoPrevious}
           aria-label="Previous versus"
           type="button"
         >
@@ -284,7 +346,7 @@ const PictureDisplay = () => {
         <button
           className="nav-arrow nav-arrow-right"
           onClick={handleNextVersus}
-          disabled={voteLoading}
+          disabled={voteLoading || allVersusSeen}
           aria-label="Next versus"
           type="button"
         >

@@ -15,7 +15,7 @@ const versuses = [
     id: 1,
     name1: 'Messi',
     name2: 'Ronaldo',
-    tag: 'Football',
+    versusTag: 'Football',
     image1: MOCK_PNG,
     image2: MOCK_PNG,
     resultTexts: {
@@ -95,13 +95,47 @@ app.get('/api/versus/count', requireAuth, (req, res) => {
   res.json({ count: versuses.length });
 });
 
+function versusIndexById(id) {
+  return versuses.findIndex((v) => v.id === id);
+}
+
+function versusBody(row) {
+  const { resultTexts: _t, ...body } = row;
+  return body;
+}
+
+app.get('/api/versus/:id/next', requireAuth, (req, res) => {
+  const current = versusById(req.params.id);
+  if (!current) {
+    return res.status(404).json({ error: 'Entity not found' });
+  }
+  const idx = versusIndexById(current.id);
+  const next = idx >= 0 ? versuses[idx + 1] : null;
+  if (!next) {
+    return res.status(404).json({ error: 'Entity not found' });
+  }
+  res.json(versusBody(next));
+});
+
+app.get('/api/versus/:id/previous', requireAuth, (req, res) => {
+  const current = versusById(req.params.id);
+  if (!current) {
+    return res.status(404).json({ error: 'Entity not found' });
+  }
+  const idx = versusIndexById(current.id);
+  const prev = idx > 0 ? versuses[idx - 1] : null;
+  if (!prev) {
+    return res.status(404).json({ error: 'Entity not found' });
+  }
+  res.json(versusBody(prev));
+});
+
 app.get('/api/versus/:id', requireAuth, (req, res) => {
   const row = versusById(req.params.id);
   if (!row) {
     return res.status(404).json({ error: 'Versus not found' });
   }
-  const { resultTexts: _t, ...body } = row;
-  res.json(body);
+  res.json(versusBody(row));
 });
 
 app.post('/api/versus/:id/vote', requireAuth, (req, res) => {

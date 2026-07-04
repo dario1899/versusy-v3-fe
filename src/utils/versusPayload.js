@@ -1,16 +1,10 @@
 /**
- * @returns {string} e.g. "#Football" or "#" when missing
+ * @returns {string} e.g. "#Football" or "#" when missing/empty
  */
 export function formatVersusTag(data) {
   if (!data || typeof data !== 'object') return '#';
 
-  const raw =
-    data.tag ??
-    data.hashtag ??
-    data.category ??
-    data.categoryName ??
-    data.categoryTag ??
-    '';
+  const raw = data.versusTag ?? '';
 
   const trimmed = String(raw).trim();
   if (!trimmed) return '#';
