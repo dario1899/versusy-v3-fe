@@ -16,7 +16,18 @@ function glossWord(n) {
  */
 export function formatVoteSummary(votes, totalVotes) {
   const v = Math.floor(Math.abs(Number(votes)) || 0);
-  const t = Math.max(0, Math.floor(Number(totalVotes)) || 0);
-  const pct = t > 0 ? Math.round((v / t) * 100) : 0;
+  const pct = getVotePercent(votes, totalVotes);
   return `${v} ${glossWord(v)} (${pct}%)`;
+}
+
+/** @returns {number} 0–100 */
+export function getVotePercent(votes, totalVotes) {
+  const v = Math.floor(Math.abs(Number(votes)) || 0);
+  const t = Math.max(0, Math.floor(Number(totalVotes)) || 0);
+  return t > 0 ? Math.round((v / t) * 100) : 0;
+}
+
+/** @returns {string} e.g. "50%" */
+export function formatVotePercent(votes, totalVotes) {
+  return `${getVotePercent(votes, totalVotes)}%`;
 }

@@ -143,12 +143,73 @@
   margin-top: 0;
 }
 
-.glosuj-btn img {
+.glosuj-btn__frame {
+  position: relative;
   display: block;
   width: 90%;
   max-width: 320px;
   margin: 0 auto;
+}
+
+.glosuj-btn__pill {
+  position: absolute;
+  inset: 14% 3%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 999px;
+  overflow: hidden;
   pointer-events: none;
+}
+
+.glosuj-btn__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: 999px 0 0 999px;
+  pointer-events: none;
+}
+
+.glosuj-btn__frame--top .glosuj-btn__fill {
+  background: #789fd3;
+}
+
+.glosuj-btn__frame--bottom .glosuj-btn__fill {
+  background: #f2cf2f;
+}
+
+.glosuj-btn img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.glosuj-btn__label {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.85rem, 3.2vw, 1.2rem);
+  font-weight: 800;
+  line-height: 1;
+  color: #333333;
+  text-shadow:
+    0 0 3px #ffffff,
+    0 0 3px #ffffff,
+    0 1px 2px rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.glosuj-btn:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .player-card-top .player-name {
@@ -157,22 +218,6 @@
 
 .player-card-bottom .player-name {
   color: #ffffff;
-}
-
-/* Match visual weight of .glosuj-btn image (same width band, bold label-sized type) */
-.vote-result {
-  display: block;
-  width: 90%;
-  max-width: 320px;
-  margin: 0 auto;
-  margin-top: 0;
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1.25;
-  color: #ffffff;
-  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
-  text-align: center;
-  box-sizing: border-box;
 }
 
 .vs-center {
@@ -187,6 +232,7 @@
   width: 120px;
   height: auto;
   display: block;
+  transform: rotate(21.37deg);
 }
 
 .nav-arrow {
@@ -284,12 +330,7 @@
       font-size: 1.6rem;
     }
 
-    .glosuj-btn img {
+    .glosuj-btn__frame {
       max-width: 260px;
-    }
-
-    .vote-result {
-      max-width: 260px;
-      font-size: 1.2rem;
     }
   }

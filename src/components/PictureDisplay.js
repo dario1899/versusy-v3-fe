@@ -7,12 +7,47 @@ import {
   postVersusVote,
 } from '../api/client';
 import { normalizeVersusToPlayers } from '../utils/versusPayload';
-import { formatVoteSummary } from '../utils/voteFormat';
+import { formatVotePercent, getVotePercent } from '../utils/voteFormat';
 
 import glosujButton from '../design/glosuj-button.png';
 import vsButton from '../design/vs-button.png';
 import leftArrow from '../design/left-arrow.png';
 import rightArrow from '../design/right-arrow.png';
+
+function GlosujButton({ votes, totalVotes, voted, onClick, disabled, placement }) {
+  const percent = getVotePercent(votes, totalVotes);
+  const frameClassName = [
+    'glosuj-btn__frame',
+    placement === 'top' ? 'glosuj-btn__frame--top' : 'glosuj-btn__frame--bottom',
+    voted ? 'glosuj-btn__frame--voted' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <button
+      className="glosuj-btn"
+      onClick={voted ? undefined : onClick}
+      disabled={disabled || voted}
+      type="button"
+      aria-label={voted ? formatVotePercent(votes, totalVotes) : 'Głosuj'}
+    >
+      <span className={frameClassName}>
+        <img src={glosujButton} alt="" aria-hidden="true" />
+        {voted ? (
+          <span className="glosuj-btn__pill">
+            <span
+              className="glosuj-btn__fill"
+              style={{ width: `${percent}%` }}
+              aria-hidden="true"
+            />
+            <span className="glosuj-btn__label">{percent}%</span>
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
 
 const PictureDisplay = () => {
   const [images, setImages] = useState([]);
@@ -242,20 +277,14 @@ const PictureDisplay = () => {
 
             <div className="player-footer">
               <div className="player-name">{topImage.name}</div>
-              {voteCounts == null ? (
-                <button
-                  className="glosuj-btn"
-                  onClick={handleImageClick(1)}
-                  disabled={voteLoading}
-                  type="button"
-                >
-                  <img src={glosujButton} alt="Głosuj" />
-                </button>
-              ) : (
-                <div className="vote-result">
-                  {formatVoteSummary(voteCounts.pic1Votes, voteTotal)}
-                </div>
-              )}
+              <GlosujButton
+                placement="top"
+                votes={voteCounts?.pic1Votes ?? 0}
+                totalVotes={voteTotal}
+                voted={voteCounts != null}
+                onClick={handleImageClick(1)}
+                disabled={voteLoading}
+              />
             </div>
           </div>
         </div>
@@ -267,20 +296,14 @@ const PictureDisplay = () => {
         <div className="vote-section vote-section-bottom">
           <div className="player-card player-card-bottom">
             <div className="player-footer">
-              {voteCounts == null ? (
-                <button
-                  className="glosuj-btn"
-                  onClick={handleImageClick(2)}
-                  disabled={voteLoading}
-                  type="button"
-                >
-                  <img src={glosujButton} alt="Głosuj" />
-                </button>
-              ) : (
-                <div className="vote-result">
-                  {formatVoteSummary(voteCounts.pic2Votes, voteTotal)}
-                </div>
-              )}
+              <GlosujButton
+                placement="bottom"
+                votes={voteCounts?.pic2Votes ?? 0}
+                totalVotes={voteTotal}
+                voted={voteCounts != null}
+                onClick={handleImageClick(2)}
+                disabled={voteLoading}
+              />
               <div className="player-name">{bottomImage.name}</div>
             </div>
             <img
