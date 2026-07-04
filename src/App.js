@@ -38,7 +38,7 @@ function App() {
 
   return (
     <div className="App">
-      <main>
+      <main className={isLoggedIn ? 'main--vote' : undefined}>
         {isLoggedIn ? (
           <>
             <div className="auth-header">

@@ -15,6 +15,7 @@ const versuses = [
     id: 1,
     name1: 'Messi',
     name2: 'Ronaldo',
+    tag: 'Football',
     image1: MOCK_PNG,
     image2: MOCK_PNG,
     resultTexts: {

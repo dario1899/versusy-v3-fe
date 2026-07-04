@@ -6,7 +6,9 @@ import {
   fetchVersusByIndex,
   postVersusVote,
 } from '../api/client';
-import { normalizeVersusToPlayers } from '../utils/versusPayload';
+import { normalizeVersusToPlayers, formatVersusTag } from '../utils/versusPayload';
+import TagBar from './TagBar';
+import BottomBar from './BottomBar';
 import { formatVotePercent, getVotePercent } from '../utils/voteFormat';
 
 import glosujButton from '../design/glosuj-button.png';
@@ -49,6 +51,16 @@ function GlosujButton({ votes, totalVotes, voted, onClick, disabled, placement }
   );
 }
 
+function VoteAppShell({ tag, children }) {
+  return (
+    <div className="app-vote-shell">
+      <TagBar tag={tag} />
+      <div className="app-vote-shell__content">{children}</div>
+      <BottomBar />
+    </div>
+  );
+}
+
 const PictureDisplay = () => {
   const [images, setImages] = useState([]);
   /** After voting: tallies from API `{ pic1Votes, pic2Votes }`. */
@@ -62,6 +74,7 @@ const PictureDisplay = () => {
   const [allVersusSeen, setAllVersusSeen] = useState(false);
   const [voteError, setVoteError] = useState('');
   const [voteLoading, setVoteLoading] = useState(false);
+  const [versusTag, setVersusTag] = useState('#');
   const blobUrlsRef = useRef([]);
 
   const loadVersus = useCallback(async (targetId, opts = {}) => {
@@ -76,6 +89,7 @@ const PictureDisplay = () => {
     setVoteError('');
     setVoteCounts(null);
     setAllVersusSeen(false);
+    setVersusTag('#');
 
     try {
       const data = await fetchVersusByIndex(targetId);
@@ -88,6 +102,7 @@ const PictureDisplay = () => {
       blobUrlsRef.current = objectUrls;
       setCurrentVersusId(targetId);
       setImages(players);
+      setVersusTag(formatVersusTag(data));
       setAllVersusSeen(false);
     } catch (e) {
       if (aborted()) return;
@@ -181,25 +196,30 @@ const PictureDisplay = () => {
 
   if (loading) {
     return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Ładowanie…</p>
-      </div>
+      <VoteAppShell tag={versusTag}>
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Ładowanie…</p>
+        </div>
+      </VoteAppShell>
     );
   }
 
   if (error) {
     return (
-      <div className="vote-screen">
-        <div className="vote-error">{error}</div>
-      </div>
+      <VoteAppShell tag={versusTag}>
+        <div className="vote-screen">
+          <div className="vote-error">{error}</div>
+        </div>
+      </VoteAppShell>
     );
   }
 
   if (allVersusSeen) {
     return (
-      <div className="vote-screen">
-        <div className="vote-frame vote-frame--nav-only">
+      <VoteAppShell tag={versusTag}>
+        <div className="vote-screen">
+          <div className="vote-frame vote-frame--nav-only">
           <button
             className="nav-arrow nav-arrow-left"
             onClick={handlePrevVersus}
@@ -221,18 +241,21 @@ const PictureDisplay = () => {
           <div className="versus-all-seen-message">
             Zobaczyłeś już wszystkie Versusy. Wróć później
           </div>
+          </div>
         </div>
-      </div>
+      </VoteAppShell>
     );
   }
 
   if (images.length < 2) {
     return (
-      <div className="vote-screen">
-        <div className="vote-error">
-          Nieprawidłowe dane versus (wymaganych jest dwóch graczy).
+      <VoteAppShell tag={versusTag}>
+        <div className="vote-screen">
+          <div className="vote-error">
+            Nieprawidłowe dane versus (wymaganych jest dwóch graczy).
+          </div>
         </div>
-      </div>
+      </VoteAppShell>
     );
   }
 
@@ -244,8 +267,9 @@ const PictureDisplay = () => {
       : 0;
 
   return (
-    <div className="vote-screen">
-      <div className="vote-frame">
+    <VoteAppShell tag={versusTag}>
+      <div className="vote-screen">
+        <div className="vote-frame">
         {voteError ? <div className="vote-action-error">{voteError}</div> : null}
 
         <button
@@ -314,8 +338,9 @@ const PictureDisplay = () => {
             />
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </VoteAppShell>
   );
 };
 
