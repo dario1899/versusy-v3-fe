@@ -6,6 +6,11 @@ import { apiRoutes } from './routes';
 
 const STORAGE_ACCESS = 'accessToken';
 const STORAGE_REFRESH = 'refreshToken';
+const STORAGE_LOGGED_IN = 'auth:isLoggedIn';
+const STORAGE_LOGIN = 'auth:login';
+const SESSION_EXPIRED_EVENT = 'auth:session-expired';
+
+export { SESSION_EXPIRED_EVENT };
 
 export function getStoredAccessToken() {
   return (
@@ -41,6 +46,25 @@ export function clearAuthTokens() {
   localStorage.removeItem('authToken');
 }
 
+/** Clears tokens + app login flags and notifies UI to redirect to login. */
+export function clearSession() {
+  clearAuthTokens();
+  localStorage.removeItem(STORAGE_LOGGED_IN);
+  localStorage.removeItem(STORAGE_LOGIN);
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+}
+
+function throwIfUnauthorized(res, data) {
+  if (res.status !== 401) return;
+  clearSession();
+  const err = new Error(
+    data?.message || data?.error || 'Sesja wygasła. Zaloguj się ponownie.'
+  );
+  err.unauthorized = true;
+  err.status = 401;
+  throw err;
+}
+
 /**
  * @param {string} email
  * @param {string} password
@@ -69,7 +93,7 @@ export async function logout() {
       body: JSON.stringify({ refreshToken }),
     });
   } finally {
-    clearAuthTokens();
+    clearSession();
   }
 }
 
@@ -77,8 +101,9 @@ export async function fetchVersusesCount() {
   const res = await fetch(apiRoutes.versusesCount(), {
     headers: getAuthHeaders(),
   });
+  const data = await res.json().catch(() => ({}));
+  throwIfUnauthorized(res, data);
   if (!res.ok) throw new Error('Failed to load versuses count');
-  const data = await res.json();
 
   return data.count;
 }
@@ -96,6 +121,7 @@ async function fetchVersusResponse(url) {
     headers: getAuthHeaders(),
   });
   const data = await res.json().catch(() => ({}));
+  throwIfUnauthorized(res, data);
   if (!res.ok) {
     const msg =
       data.message || data.error || data.detail || 'Failed to load versus';
@@ -133,9 +159,10 @@ export async function postVersusVote(versusId, choice) {
     headers: getAuthHeaders(),
     body: JSON.stringify({ choice }),
   });
+  const data = await res.json().catch(() => ({}));
+  throwIfUnauthorized(res, data);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.error || 'Vote failed');
+    throw new Error(data.message || data.error || 'Vote failed');
   }
-  return res.json();
+  return data;
 }

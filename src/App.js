@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import PictureDisplay from './components/PictureDisplay';
 import LoginPage from './components/LoginPage';
-import { login as apiLogin, logout as apiLogout } from './api/client';
+import { login as apiLogin, logout as apiLogout, getStoredAccessToken, SESSION_EXPIRED_EVENT } from './api/client';
 
 function App() {
   const storageKey = useMemo(() => 'auth:isLoggedIn', []);
@@ -11,7 +11,27 @@ function App() {
   const [login, setLogin] = useState('');
 
   useEffect(() => {
-    setIsLoggedIn(localStorage.getItem(storageKey) === 'true');
+    const onSessionExpired = () => {
+      setIsLoggedIn(false);
+      setLogin('');
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  }, []);
+
+  useEffect(() => {
+    const loggedInFlag = localStorage.getItem(storageKey) === 'true';
+    const hasToken = Boolean(getStoredAccessToken());
+
+    if (loggedInFlag && !hasToken) {
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(userKey);
+      setIsLoggedIn(false);
+      setLogin('');
+      return;
+    }
+
+    setIsLoggedIn(loggedInFlag && hasToken);
     setLogin(localStorage.getItem(userKey) || '');
   }, [storageKey, userKey]);
 
@@ -30,8 +50,6 @@ function App() {
 
   const handleLogout = async () => {
     await apiLogout();
-    localStorage.removeItem(storageKey);
-    localStorage.removeItem(userKey);
     setIsLoggedIn(false);
     setLogin('');
   };
