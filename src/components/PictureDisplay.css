@@ -13,6 +13,7 @@
   border: 4px solid #0077ff;
   overflow: hidden;
   box-sizing: border-box;
+  --versus-name-font-size: clamp(1.20rem, 4vw, 1.50rem);
 }
 
 .app-vote-shell__content {
@@ -34,20 +35,20 @@
 .tag-bar__pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: #ffffff;
   border-radius: 999px;
-  padding: 5px 14px;
+  padding: 6px 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: var(--versus-name-font-size);
   color: #000000;
   line-height: 1.2;
 }
 
 .tag-bar__icon {
-  width: 16px;
-  height: 16px;
+  width: 1.1em;
+  height: 1.1em;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -279,7 +280,7 @@
   flex-shrink: 0;
   background: #000000;
   color: #ffffff;
-  font-size: clamp(1.20rem, 4vw, 1.50rem);
+  font-size: var(--versus-name-font-size);
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
@@ -462,6 +463,7 @@
       border-radius: 0;
       border-left: none;
       border-right: none;
+      --versus-name-font-size: 1.1rem;
     }
 
     .vote-frame {
@@ -478,7 +480,6 @@
     }
 
     .player-name {
-      font-size: 1.1rem;
       padding: 4px 12px;
     }
 
