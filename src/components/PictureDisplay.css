@@ -159,7 +159,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  --vs-clearance: clamp(18px, 2.5vh, 28px);
+  --vs-size: 120px;
+  /* space between the line dividing the two halves and the vote result bars:
+     half the VS image minus this offset (bigger offset = bars closer to the VS button) */
+  --vs-clearance: calc(var(--vs-size) / 2 - 12px);
 }
 
 .vote-frame--nav-only {
@@ -215,6 +218,24 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  /* reset native button styles */
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.player-card:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.player-card:focus-visible {
+  outline: 3px solid #0077ff;
+  outline-offset: 2px;
 }
 
 .player-card-top {
@@ -251,30 +272,6 @@
   object-fit: contain;
 }
 
-.player-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 2px 8px 4px;
-  background: transparent;
-  position: relative;
-  z-index: 4;
-  flex: 0 0 auto;
-}
-
-.glosuj-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 11;
-  pointer-events: auto;
-}
-
 .player-name {
   width: 100%;
   flex-shrink: 0;
@@ -289,28 +286,29 @@
   box-sizing: border-box;
 }
 
-.glosuj-btn__frame {
-  position: relative;
-  display: block;
-  width: 90%;
-  max-width: 320px;
-  margin: 0 auto;
+.vote-result-row {
+  flex: 0 0 auto;
+  height: clamp(28px, 6vh, 40px);
+  display: flex;
+  justify-content: center;
 }
 
-.glosuj-btn__pill {
-  position: absolute;
-  inset: 14% 3%;
-  z-index: 1;
+.vote-result {
+  position: relative;
+  width: 84%;
+  max-width: 320px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
   border-radius: 999px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   pointer-events: none;
 }
 
-.glosuj-btn__fill {
+.vote-result__fill {
   position: absolute;
   left: 0;
   top: 0;
@@ -320,27 +318,17 @@
   pointer-events: none;
 }
 
-.glosuj-btn__frame--top .glosuj-btn__fill {
+.vote-result--top .vote-result__fill {
   background: #789fd3;
 }
 
-.glosuj-btn__frame--bottom .glosuj-btn__fill {
+.vote-result--bottom .vote-result__fill {
   background: #f2cf2f;
 }
 
-.glosuj-btn img {
-  display: block;
-  width: 100%;
-  height: auto;
-  pointer-events: none;
-}
-
-.glosuj-btn__label {
+.vote-result__label {
   position: relative;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: clamp(0.85rem, 3.2vw, 1.2rem);
   font-weight: 800;
   line-height: 1;
@@ -349,13 +337,7 @@
     0 0 3px #ffffff,
     0 0 3px #ffffff,
     0 1px 2px rgba(255, 255, 255, 0.9);
-  pointer-events: none;
   white-space: nowrap;
-}
-
-.glosuj-btn:disabled {
-  cursor: default;
-  opacity: 1;
 }
 
 .vs-center {
@@ -368,11 +350,47 @@
 }
 
 .vs-image {
-  width: 120px;
+  width: var(--vs-size);
   height: auto;
   display: block;
-  transform: rotate(21.37deg);
+  transform: rotate(1.71deg);
   pointer-events: none;
+}
+
+.results-timer {
+  /* same box as the VS image; the ring size inside it is the circle's r in ResultsTimer */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* start draining from the top */
+  pointer-events: none;
+}
+
+.results-timer__track,
+.results-timer__progress {
+  fill: none;
+  stroke-width: 3.5;
+}
+
+.results-timer__track {
+  stroke: rgba(255, 255, 255, 0.7);
+}
+
+.results-timer__progress {
+  stroke: #0077ff;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation-name: results-timer-drain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes results-timer-drain {
+  to {
+    stroke-dashoffset: 100;
+  }
 }
 
 .nav-arrow {
@@ -471,19 +489,11 @@
       border-radius: 0;
     }
 
-    .vs-image {
-      width: 100px;
-    }
-
     .vote-frame {
-      --vs-clearance: clamp(14px, 2vh, 24px);
+      --vs-size: 100px;
     }
 
     .player-name {
       padding: 4px 12px;
-    }
-
-    .glosuj-btn__frame {
-      max-width: 260px;
     }
   }

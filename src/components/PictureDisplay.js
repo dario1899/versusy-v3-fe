@@ -12,43 +12,85 @@ import { normalizeVersusToPlayers, formatVersusTag } from '../utils/versusPayloa
 import TagBar from './TagBar';
 import BottomBar from './BottomBar';
 import { formatVotePercent, getVotePercent } from '../utils/voteFormat';
+import { RESULTS_DISPLAY_MS } from '../config';
 
-import glosujButton from '../design/glosuj-button.png';
 import vsButton from '../design/vs-button.png';
 import leftArrow from '../design/left-arrow.png';
 import rightArrow from '../design/right-arrow.png';
 
-function GlosujButton({ votes, totalVotes, voted, onClick, disabled, placement }) {
+/**
+ * Ring around the VS button that drains while the results are shown.
+ * Coordinates are in % of the VS image: the VS circle artwork has a radius of ~38, so r=40 hugs it.
+ */
+const RESULTS_TIMER_RADIUS = 40;
+
+function ResultsTimer({ durationMs }) {
+  return (
+    <svg className="results-timer" viewBox="0 0 100 100" aria-hidden="true">
+      <circle className="results-timer__track" cx="50" cy="50" r={RESULTS_TIMER_RADIUS} />
+      <circle
+        className="results-timer__progress"
+        cx="50"
+        cy="50"
+        r={RESULTS_TIMER_RADIUS}
+        pathLength="100"
+        style={{ animationDuration: `${durationMs}ms` }}
+      />
+    </svg>
+  );
+}
+
+/** This side's share of the votes. Its row is always reserved so the layout doesn't jump after voting. */
+function VoteResult({ placement, votes, totalVotes, voted }) {
   const percent = getVotePercent(votes, totalVotes);
-  const frameClassName = [
-    'glosuj-btn__frame',
-    placement === 'top' ? 'glosuj-btn__frame--top' : 'glosuj-btn__frame--bottom',
-    voted ? 'glosuj-btn__frame--voted' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  return (
+    <div className="vote-result-row" aria-hidden={!voted}>
+      {voted ? (
+        <span className={`vote-result vote-result--${placement}`}>
+          <span
+            className="vote-result__fill"
+            style={{ width: `${percent}%` }}
+            aria-hidden="true"
+          />
+          <span className="vote-result__label">{percent}%</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** The whole picture card is the vote button. */
+function PlayerCard({ player, placement, votes, totalVotes, voted, onVote, disabled }) {
+  const name = <div className="player-name">{player.name}</div>;
+  const image = (
+    <div className="player-image-wrap">
+      <img src={player.url} alt={player.alt} className="player-image" />
+    </div>
+  );
 
   return (
     <button
-      className="glosuj-btn"
-      onClick={voted ? undefined : onClick}
-      disabled={disabled || voted}
       type="button"
-      aria-label={voted ? formatVotePercent(votes, totalVotes) : 'Głosuj'}
+      className={`player-card player-card-${placement}`}
+      onClick={voted ? undefined : onVote}
+      disabled={disabled || voted}
+      aria-label={
+        voted
+          ? `${player.name}: ${formatVotePercent(votes, totalVotes)}`
+          : `Głosuj na ${player.name}`
+      }
     >
-      <span className={frameClassName}>
-        <img src={glosujButton} alt="" aria-hidden="true" />
-        {voted ? (
-          <span className="glosuj-btn__pill">
-            <span
-              className="glosuj-btn__fill"
-              style={{ width: `${percent}%` }}
-              aria-hidden="true"
-            />
-            <span className="glosuj-btn__label">{percent}%</span>
-          </span>
-        ) : null}
-      </span>
+      {placement === 'top' ? (
+        <>
+          {image}
+          {name}
+        </>
+      ) : (
+        <>
+          {name}
+          {image}
+        </>
+      )}
     </button>
   );
 }
@@ -250,6 +292,16 @@ const PictureDisplay = () => {
     [currentVersusId]
   );
 
+  // After a vote, show the results for RESULTS_DISPLAY_MS, then move on to the next versus.
+  // Navigating away earlier resets voteCounts, which cancels the timer.
+  const navigateVersusRef = useRef(navigateVersus);
+  navigateVersusRef.current = navigateVersus;
+  useEffect(() => {
+    if (voteCounts == null) return undefined;
+    const timer = setTimeout(() => navigateVersusRef.current('next'), RESULTS_DISPLAY_MS);
+    return () => clearTimeout(timer);
+  }, [voteCounts]);
+
   const handleNextVersus = useCallback(async () => {
     await navigateVersus('next');
   }, [navigateVersus]);
@@ -356,53 +408,46 @@ const PictureDisplay = () => {
         </button>
 
         <div className="vote-section vote-section-top">
-          <div className="player-card player-card-top">
-            <div className="player-image-wrap">
-              <img
-                src={topImage.url}
-                alt={topImage.alt}
-                className="player-image"
-              />
-            </div>
-            <div className="player-name">{topImage.name}</div>
-          </div>
-          <div className="player-footer">
-            <GlosujButton
-              placement="top"
-              votes={voteCounts?.pic1Votes ?? 0}
-              totalVotes={voteTotal}
-              voted={voteCounts != null}
-              onClick={handleImageClick(1)}
-              disabled={voteLoading}
-            />
-          </div>
+          <PlayerCard
+            player={topImage}
+            placement="top"
+            votes={voteCounts?.pic1Votes ?? 0}
+            totalVotes={voteTotal}
+            voted={voteCounts != null}
+            onVote={handleImageClick(1)}
+            disabled={voteLoading}
+          />
+          <VoteResult
+            placement="top"
+            votes={voteCounts?.pic1Votes ?? 0}
+            totalVotes={voteTotal}
+            voted={voteCounts != null}
+          />
         </div>
 
         <div className="vs-center">
           <img src={vsButton} alt="vs" className="vs-image" />
+          {voteCounts != null ? (
+            <ResultsTimer key={currentVersusId} durationMs={RESULTS_DISPLAY_MS} />
+          ) : null}
         </div>
 
         <div className="vote-section vote-section-bottom">
-          <div className="player-footer">
-            <GlosujButton
-              placement="bottom"
-              votes={voteCounts?.pic2Votes ?? 0}
-              totalVotes={voteTotal}
-              voted={voteCounts != null}
-              onClick={handleImageClick(2)}
-              disabled={voteLoading}
-            />
-          </div>
-          <div className="player-card player-card-bottom">
-            <div className="player-name">{bottomImage.name}</div>
-            <div className="player-image-wrap">
-              <img
-                src={bottomImage.url}
-                alt={bottomImage.alt}
-                className="player-image"
-              />
-            </div>
-          </div>
+          <VoteResult
+            placement="bottom"
+            votes={voteCounts?.pic2Votes ?? 0}
+            totalVotes={voteTotal}
+            voted={voteCounts != null}
+          />
+          <PlayerCard
+            player={bottomImage}
+            placement="bottom"
+            votes={voteCounts?.pic2Votes ?? 0}
+            totalVotes={voteTotal}
+            voted={voteCounts != null}
+            onVote={handleImageClick(2)}
+            disabled={voteLoading}
+          />
         </div>
         </div>
       </div>
