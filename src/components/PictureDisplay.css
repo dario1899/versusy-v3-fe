@@ -497,3 +497,7 @@
       padding: 4px 12px;
     }
   }
+/* Horizontal swipes navigate between versuses; let the browser handle only vertical panning. */
+.vote-screen--swipeable {
+  touch-action: pan-y;
+}

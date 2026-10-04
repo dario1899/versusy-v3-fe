@@ -11,6 +11,7 @@ import {
 import { normalizeVersusToPlayers, formatVersusTag } from '../utils/versusPayload';
 import TagBar from './TagBar';
 import BottomBar from './BottomBar';
+import useSwipe from '../hooks/useSwipe';
 import { formatVotePercent, getVotePercent } from '../utils/voteFormat';
 import { RESULTS_DISPLAY_MS } from '../config';
 
@@ -310,6 +311,12 @@ const PictureDisplay = () => {
     await navigateVersus('previous');
   }, [navigateVersus]);
 
+  // Swipe left = next versus, swipe right = previous (same guards as the arrow buttons).
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: voteLoading ? undefined : handleNextVersus,
+    onSwipeRight: voteLoading ? undefined : handlePrevVersus,
+  });
+
   if (loading) {
     return (
       <VoteAppShell tag={versusTag}>
@@ -334,7 +341,7 @@ const PictureDisplay = () => {
   if (allVersusSeen) {
     return (
       <VoteAppShell tag="#">
-        <div className="vote-screen">
+        <div className="vote-screen vote-screen--swipeable" {...swipeHandlers}>
           <div className="vote-frame vote-frame--nav-only">
           <button
             className="nav-arrow nav-arrow-left"
@@ -384,7 +391,7 @@ const PictureDisplay = () => {
 
   return (
     <VoteAppShell tag={versusTag}>
-      <div className="vote-screen">
+      <div className="vote-screen vote-screen--swipeable" {...swipeHandlers}>
         <div className="vote-frame">
         {voteError ? <div className="vote-action-error">{voteError}</div> : null}
 
